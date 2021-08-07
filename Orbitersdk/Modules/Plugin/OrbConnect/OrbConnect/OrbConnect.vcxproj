@@ -51,7 +51,7 @@
     </ClCompile>
     <Link>
       <AdditionalDependencies>Orbitersdk.lib;orbiter.lib;WS2_32.lib;user32.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>C:\Program Files %28x86%29\Microsoft SDKs\Windows\v7.0A\Lib;C:\orbiterDEV\orbiter100830\Orbitersdk\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>C:\Program Files %28x86%29\Microsoft SDKs\Windows\v7.0A\Lib;..\..\..\..\Orbitersdk\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <IgnoreSpecificDefaultLibraries>msvcirt.lib;%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <RandomizedBaseAddress>false</RandomizedBaseAddress>
@@ -73,7 +73,7 @@
     <Link>
       <AdditionalDependencies>orbitersdk.lib;orbiter.lib;WS2_32.lib;user32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <OutputFile>..\..\..\..\Modules\Plugin\$(ProjectName).dll</OutputFile>
-      <AdditionalLibraryDirectories>C:\Program Files %28x86%29\Microsoft SDKs\Windows\v7.0A\Lib;C:\orbiterDEV\orbiter100830\Orbitersdk\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>C:\Program Files %28x86%29\Microsoft SDKs\Windows\v7.0A\Lib;..\..\..\..\Orbitersdk\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <IgnoreSpecificDefaultLibraries>msvcirt.lib;%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
       <SubSystem>Windows</SubSystem>
       <RandomizedBaseAddress>false</RandomizedBaseAddress>
