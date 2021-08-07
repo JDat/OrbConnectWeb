@@ -1,0 +1,608 @@
+<html>
+<head>
+<meta http-equiv="content-type" content="text/html; charset=utf-8">.
+<title>Orbiter</title>
+<style>
+body {
+	background-color: black;
+	font-style: normal;
+	font-family: sans-serif;
+}
+
+table { 
+	table-layout: fixed; 
+	border: 3px solid white;
+	font-size: 45px;
+	width: 100%;
+}
+
+td {
+	font-weight: bold;
+	text-align: center;
+	background-color: #9b9b8c;
+	color: #00000;
+	border: 4px solid black;
+	word-wrap: break-word; 
+	height: 100px;
+}
+
+.caption {
+	color: white;
+	background-color: black;
+}
+
+.active {
+	background-color: #ffffd0;
+}
+
+.red {
+	background-color: #ff0000;
+}
+
+.yellow {
+	background-color: yellow;
+}
+
+.orange {
+	background-color: orange;
+}
+
+.green {
+	background-color: #00ff00;
+}
+
+.black {
+	background-color: black;
+}
+
+@font-face {
+  font-family: seven-segment;
+  src: url('SevenSegmentFont.ttf'); 
+}
+
+.timer {
+	background-color: black;
+	color: #00ff00;
+	font-family: seven-segment;
+	font-style: italic;
+	font-size: 120%;
+}
+
+</style>
+
+<script type="text/javascript" src="jquery-1.10.2.js"></script>
+<script type="text/javascript" src="jquery-ui-1.10.4.custom.js"></script>
+<link rel="stylesheet" href="css/ui-darkness/jquery-ui-1.10.4.custom.css">
+
+
+<script type="text/javascript" src="orbiterclient.js"></script>
+<script type="text/javascript" src="timer.js"></script>
+<script type="text/javascript">
+
+var updateInterval = 200; 	// ms
+var rcsLevel = 1.0; 		// RCS thrust, 0..1
+var rcsPulse = 200;			// RCS pulse duration, ms
+
+
+function test() {
+//		oc.execute("XCTL:FOCUS:DoorsPos", function(data) { alert(data); } );
+}
+
+var oc = new OrbiterClient();
+oc.start(updateInterval);	
+
+function showTimer() {
+	var timer = new Timer();
+	
+	oc.subscribe("ORB:SimTime", function(t) {
+		$("#timer1").text(timer.getTime(t));
+	} );
+	$("#timer1reset").click( function() {
+		timer.reset();
+	} );
+}
+
+function addTimer(displayId, resetId) {
+	var timer = new Timer();
+	
+	oc.subscribe("ORB:SimTime", function(t) {
+		$(displayId).text(timer.getTime(t));
+	} );
+	$(resetId).click( function() {
+		timer.reset();
+	} );	
+}
+
+var rcsMode;
+function showNavModes() {
+	for (var i=1; i<=7; i++) {
+		$("#navmode"+i).click( function() {
+			var id = $(this).attr("id")[7];
+			oc.execute("SHIP:FOCUS:ToggleNavmode:"+id);
+		} );
+	}
+	
+	oc.subscribe("SHIP:FOCUS:NavModeStates", function(data) { 
+		for (var i=1; i<=7; i++) {
+			if (data.charAt(i) == "1") {
+				$("#navmode"+i).addClass("active");
+			} else {
+				$("#navmode"+i).removeClass("active");
+			}
+		}
+	} );
+	
+	for (var i=0; i<=2; i++) {
+		$("#rcsmode"+i).click( function() {
+			var id = $(this).attr("id")[7];
+			oc.execute("FOCUS:SetAttitudeMode:"+id);
+		} );
+	}
+	
+	oc.subscribe("FOCUS:AttitudeMode", function(data) { 
+		rcsMode = Number(data);
+		for (var i=0; i<=2; i++) {
+			if ( i == rcsMode ) {
+				$("#rcsmode"+i).addClass("active");
+			} else {
+				$("#rcsmode"+i).removeClass("active");
+			}
+		}
+	} );
+	
+	
+}
+
+var lights = [0, 0, 0];
+function showLights() {
+	oc.subscribe("XCTL:FOCUS:ExtLights", function(data) { 
+		for (var i=0; i<3; i++) {
+			if (data.charAt(i) == "1") {
+				$("#light"+i).addClass("green");
+				lights[i] = 1;
+			} else {
+				$("#light"+i).removeClass("green");
+				lights[i] = 0;
+			}
+		}
+	} );
+	
+	for (var i=0; i<3; i++) {
+		$("#light"+i).click( function() {
+			var id = Number($(this).attr("id")[5]);
+			var x = (lights[id] == 1) ? 0 : 1;
+			oc.execute("XCTL:Focus:SetExtLight:"+id+":"+x);
+		} );
+	}
+}
+
+/*
+	XR door codes:
+	
+	XRD_DockingPort=0, XRD_ScramDoors=1, XRD_HoverDoors=2, XRD_Ladder=3, XRD_Gear=4, 
+    XRD_RetroDoors=5, XRD_OuterAirlock=6, XRD_InnerAirlock=7, XRD_AirlockChamber=8, 
+    XRD_CrewHatch=9, XRD_Radiator=10, XRD_Speedbrake=11, XRD_APU=12, 
+    XRD_CrewElevator=13, XRD_PayloadBayDoors=14
+	
+	XR door states: 
+
+	XRDS_Opening=0, XRDS_Open=1, XRDS_Closing=2, XRDS_Closed=3, XRDS_Failed=4, XRDS_DoorNotSupported=5 
+*/
+	
+var doors = new Array(15);
+var doorOpenClass = [
+	"orange", "orange", "orange", "red", "green",
+	"orange", "red", "red", "red", 
+	"red", "orange", "orange", "green",
+	"red", "red"
+];
+
+function showDoors()  {
+	var i;
+
+	oc.subscribe("XCTL:FOCUS:DoorsPos", function(data) { 
+		var items = data.split(";");
+		for (i=0; i<items.length; i++) {
+			var tmp = items[i].split(",");
+			doors[i] = Number(tmp[0]);
+		}
+		for (i=0; i<doors.length; i++) {
+			if (( doors[i] == 0 ) || ( doors[i] == 2 )) {
+				$("#door_"+i).addClass("yellow");
+			} else {
+				$("#door_"+i).removeClass("yellow");
+			}
+		
+			if ( doors[i] == 1 ) {
+				$("#door_"+i).addClass(doorOpenClass[i]);
+			} else {
+				$("#door_"+i).removeClass(doorOpenClass[i]);
+			}
+		}
+		
+	} );
+	
+	for (i=0; i<15; i++) {
+		$("#door_"+i).click( function() {
+			var id = Number($(this).attr("id").split("_")[1]);
+			oc.execute("XCTL:FOCUS:ToggleDoor:"+id);
+		} );
+	}
+}
+
+function decodeAttitudeControls(dir) {
+	var tg = null; 
+	if ( dir == "up" ) tg = THGROUP_ATT_UP;
+	if ( dir == "down" ) tg = THGROUP_ATT_DOWN;
+	if ( dir == "fwd" ) tg = THGROUP_ATT_FORWARD;
+	if ( dir == "bck" ) tg = THGROUP_ATT_BACK;
+	if ( dir == "left" ) tg = THGROUP_ATT_LEFT;
+	if ( dir == "right" ) tg = THGROUP_ATT_RIGHT;
+	
+	if ( dir == "bleft" ) tg = THGROUP_ATT_BANKLEFT;
+	if ( dir == "bright" ) tg = THGROUP_ATT_BANKRIGHT;
+	if ( dir == "yleft" ) tg = THGROUP_ATT_YAWLEFT;
+	if ( dir == "yright" ) tg = THGROUP_ATT_YAWRIGHT;
+	if ( dir == "pup" ) tg = THGROUP_ATT_PITCHUP;
+	if ( dir == "pdown" ) tg = THGROUP_ATT_PITCHDOWN;
+	
+	return tg;
+}
+
+function encodeAttitudeControls(n) {
+	switch(n) {
+	case THGROUP_ATT_UP: return "up";
+	case THGROUP_ATT_DOWN: return "down";
+	case THGROUP_ATT_FORWARD: return "fwd";
+	case THGROUP_ATT_BACK: return "back";
+	case THGROUP_ATT_LEFT: return "left";
+	case THGROUP_ATT_RIGHT: return "right";
+	case THGROUP_ATT_BANKLEFT: return "bleft";
+	case THGROUP_ATT_BANKRIGHT: return "bright";
+	case THGROUP_ATT_YAWLEFT: return "yleft";
+	case THGROUP_ATT_YAWRIGHT: return "yright";
+	case THGROUP_ATT_PITCHUP: return "pup";
+	case THGROUP_ATT_PITCHDOWN: return "pdown";
+	}
+	
+	return null;
+}
+
+function enableAttitudeControls() {
+	oc.subscribe("SHIP:FOCUS:EngineGrpLevels", function(data) {
+		var items = data.split(",");
+		for (i=0; i<items.length; i++) {
+			var id = "#att_" + encodeAttitudeControls(i);
+			//console.log(i+"/"+id);
+			if ( Number(items[i]) > 1e-2 ) {
+				$(id).addClass("active");
+			} else {
+				$(id).removeClass("active");
+			}
+		}
+		//console.log(data);
+	} );
+
+	/*$("[id^=att]").each( function() {
+		
+		//console.log($(this).attr("id"));
+	} );*/
+
+	$("[id^=att]").click( function(event) {
+		var dir = event.target.id.slice(4);
+		var tg = decodeAttitudeControls(dir);	
+		if ( tg == null ) {
+			alert("Unrecognized direction: " + dir);
+			return;
+		}
+		
+		// Enforce RCS mode :)
+		if ( ( tg == THGROUP_ATT_BANKLEFT ) || ( tg == THGROUP_ATT_BANKRIGHT ) || 
+			( tg == THGROUP_ATT_YAWLEFT ) || ( tg == THGROUP_ATT_YAWRIGHT ) || 
+			( tg == THGROUP_ATT_PITCHUP ) || ( tg == THGROUP_ATT_PITCHDOWN ) ) {
+			// RCS rot requested
+			if ( rcsMode != 1 ) {
+				alert("Bad RCS mode!");
+				return;
+			}
+		}
+		
+		if ( ( tg == THGROUP_ATT_UP ) || ( tg == THGROUP_ATT_DOWN ) ||
+			( tg == THGROUP_ATT_FORWARD ) || ( tg == THGROUP_ATT_BACK ) ||
+			( tg == THGROUP_ATT_LEFT ) || ( tg == THGROUP_ATT_RIGHT ) ) {
+			// RCS lin requested
+			if ( rcsMode != 2 ) {
+				alert("Bad RCS mode!");
+				return;
+			}
+		}
+		
+		$("#"+event.target.id).addClass("active");
+		oc.fireThrusterGroup(tg, rcsLevel, rcsPulse);
+		setTimeout( function() { 
+			$("#"+event.target.id).removeClass("active");
+		}, rcsPulse );
+		
+	} );
+}
+
+var engineChanged = [0,0,0];
+function initEngines() {
+	//$( "#slider-main" ).slider({
+	$("[id^=slider]").slider({
+		orientation: "vertical",
+		range: "min",
+		min: 0,
+		max: 1,
+		value: 0,
+		step: 0.1,
+		slide: function( event, ui ) {
+			//$( "#amount" ).val( ui.value );
+			console.log( event.target.id+"/"+ui.value );
+			var engineId;
+			if ( event.target.id == "slider-main" ) engineId = THGROUP_MAIN;
+			if ( event.target.id == "slider-retro" ) engineId = THGROUP_RETRO;
+			if ( event.target.id == "slider-hover" ) engineId = THGROUP_HOVER;
+			engineChanged[engineId] = 1;
+			var query = "SHIP:FOCUS:SetEngineGrpLevel:" + engineId + ":" + ui.value;
+			console.log(query);
+			oc.execute(query);
+		}
+	});
+	
+	var captions = ["#cap-main", "#cap-retro", "#cap-hover"];
+	for (var i=0; i<3; i++) {
+		$(captions[i]).click( function(event) {
+			if ( event.target.id == "cap-main" ) engineId = THGROUP_MAIN;
+			if ( event.target.id == "cap-retro" ) engineId = THGROUP_RETRO;
+			if ( event.target.id == "cap-hover" ) engineId = THGROUP_HOVER;
+			var query = "SHIP:FOCUS:SetEngineGrpLevel:" + engineId + ":0";
+			console.log(query);
+			oc.execute(query);
+		} );
+	}
+	
+	oc.subscribe("SHIP:FOCUS:EngineGrpLevels", function(data) {
+		var items = data.split(",");
+
+		var sliders = ["#slider-main", "#slider-retro", "#slider-hover"];
+		for (var i=0; i<3; i++) {
+			if ( engineChanged[i] ) {
+				engineChanged[i] = 0;
+			} else {
+				$(sliders[i]).slider('value', items[i]);
+				if ( items[i] > 0 ) {
+					$(captions[i]).addClass("active");
+				} else {
+					$(captions[i]).removeClass("active");
+				}
+			}
+		}
+	});
+}
+
+function init() {
+	$("#tabs").tabs();
+	$("#probeimg").hide();
+
+	addTimer("#timer1");
+	addTimer("#timer2", "#timer2reset");
+	
+	showNavModes();
+	
+	enableAttitudeControls();
+	initEngines();
+	
+/*	$("#xrlights").hide();
+	$("#xrdoors").hide();
+	
+	oc.execute("SHIP:FOCUS:ClassName", function(data) { 
+		if ( data.slice(0,2) == "XR" ) {
+			$("#xrlights").show();
+			$("#xrdoors").show();
+		
+			showLights();
+			showDoors();
+		}
+	} );
+	*/
+	
+	showLights();
+	showDoors();
+	
+	$("#hailprobe").click( function() {
+		$("#hailprobe").addClass("green");
+		setTimeout(function() {
+			alert("The Probe has been hailed");
+			$("#hailprobe").removeClass("green");
+			$("#probeimg").show();
+		}, 5000);
+	} );
+}
+
+
+</script>
+</head>
+<body onLoad="init()">
+
+<div id="tabs">
+	<ul>
+		<li><a href="#tabs-time">TIME</a></li>
+		<li><a href="#tabs-eng">THRUST</a></li>
+		<li><a href="#tabs-nav">ROTATION</a></li>
+		<li><a href="#tabs-thr">TRANSLAT</a></li>
+		<li><a href="#tabs-lights">LIGHTS</a></li>
+		<li><a href="#tabs-sc">SPACECRAFT</a></li>
+		<li><a href="#tabs-airl">AIRLOCK</a></li>
+		<li><a href="#tabs-probe">PROBE</a></li>
+		<li><a href="#tabs-about">ABOUT</a></li>
+	</ul>
+	<div id="tabs-time">
+		<table>
+			<tr>
+				<td class="caption">MET</td>
+				<td class="timer" id="timer1"></td>
+				<td class="black"></td>
+			</tr>
+			<tr>
+				<td class="caption">TIMER</td>
+				<td class="timer" id="timer2"></td>
+				<td id="timer2reset">RESET</td>
+			</tr>
+		</table>
+	</div>
+	<div id="tabs-nav">	
+		<table>
+			<tr>
+				<td id="navmode3">PRO<br/>GRADE</td>
+				<td id="navmode5">+<br/>NML</td>
+				<td id="navmode2">H<br/>LEVEL</td>
+			</tr>
+			<tr>
+				<td id="navmode4">RETRO<br/>GRADE</td>
+				<td id="navmode6">-<br/>NML</td>
+				<td id="navmode7">HOLD<br/>ALT</td>
+			</tr>
+		</table>
+		<br />
+		<table>
+			<tr>
+				<td id="navmode1" rowspan="2">KILL<br/>ROT</td>
+				<td id="att_bleft">BANK<br/>LEFT</td>
+				<td id="att_pup">PITCH<br/>UP</td>
+				<td id="att_bright">BANK<br/>RIGHT</td>
+			</tr>
+			<tr>
+				<td id="att_yleft">YAW<br/>LEFT</td>
+				<td id="att_pdown">PITCH<br/>DOWN</td>
+				<td id="att_yright">YAW<br/>RIGHT</td>
+			</tr>
+		</table>
+		
+	</div>
+	<div id="tabs-thr">
+		<table>
+			<tr>
+				<td id="att_fwd">FWD</td>
+				<td id="att_up">UP</td>
+				<td id="att_bck">BACK</td>
+			</tr>
+			<tr>
+				<td id="att_left">LEFT</td>
+				<td id="att_down">DOWN</td>
+				<td id="att_right">RIGHT</td>
+			</tr>
+		</table>
+		
+	</div>
+	<div id="tabs-eng">
+		<table>
+			<tr>
+				<td class="caption">RCS</td>
+				<td id="rcsmode0">OFF</td>
+				<td id="rcsmode1">ROT</td>
+				<td id="rcsmode2">LIN</td>
+			</tr>
+		</table>	
+		<br/>
+		<table>
+			<tr>
+				<td id="cap-main">M<br/>A<br/>I<br/>N</td>
+				<td class="caption"><div id="slider-main" style="margin-left: 50px; height:200px;"></div></td>
+				<td id="cap-retro">R<br/>E<br/>T<br/>R<br/></td>
+				<td class="caption"><div id="slider-retro" style="margin-left: 50px; height:200px;"></div></td>
+				<td id="cap-hover">H<br/>V<br/>R</td>
+				<td class="caption"><div id="slider-hover" style="margin-left: 50px; height:200px;"></div></td>
+			</tr>
+			<tr>
+				<td class="caption" colspan="6">PRESS ILLUMINATED TO KILL THRUST</td>
+			</tr>
+		</table>
+	</div>
+	<div id="tabs-lights">
+		<table id="xrlights">
+			<tr>
+				<td colspan="3" class="caption">LIGHTS</td>
+			</tr>
+			<tr>
+				<td id="light0">NAV</td>
+				<td id="light1">BEACON</td>
+				<td id="light2">STROBE</td>
+			</tr>
+		</table>
+	</div>
+	<div id="tabs-sc">
+		<table>
+			<tr>
+				<td id="door_12">APU</td>
+				<td id="door_4">GEAR</td>
+				<td id="door_11">BRAKE</td>
+			</tr>
+			<tr>
+				<td id="door_1">SCRAM</td>
+				<td id="door_5">RETRO</td>
+				<td id="door_2">HOVER</td>
+			</tr>
+			<tr>
+				<td id="door_10">RADIATOR</td>
+				<td id="door_0">NOSE</td>
+				<td id="door_14">BAY</td>
+			</tr>
+		</table>
+	</div>
+	<div id="tabs-airl">
+		<table>
+			<tr>
+				<td id="door_7">INNER</td>
+				<td id="door_8">PRESS</td>
+				<td id="door_6">OUTER</td>
+			</tr>
+			<tr>
+				<td id="door_9">HATCH</td>
+				<td id="door_3">LADDER</td>
+				<td id="door_13">ELVTR</td>
+			</tr>
+			<tr>
+				
+			</tr>
+		</table>
+	</div>
+	<div id="tabs-probe">
+		<table>
+			<tr>
+				<td id="hailprobe">HAIL PROBE!</td>
+			</tr>
+			<tr>
+				<td class="black" width="289" height="244"> <img src="probe.jpg" id="probeimg" /></td>
+			</tr>
+
+		</table>
+	</div>
+	<div id="tabs-about">
+		<p>Orbiter (C) 2000-2012 Martin Schweiger</p>
+		
+		<p><b>Orb::Connect Web Edition is released under GPL</b><br/>
+		OUIPC (C) 2006 Russ "reverend" Purinton (GPL)<br/>
+		Orb::Connect (C) 2008-2012 Randy "yagni01" Stearns,  Brandon "hielor" Bolling (GPL)<br/>
+		Mongoose HTTP server (C) 2013 Cesanta Software Limited (GPL)<br/>
+		Orb::Connect Web Edition (C) 2014 kamaz (GPL)<br/>
+		Various bugfixes and enhancements (C) 2014 vdrorb (GPL)<br/>
+		</p>
+		
+		<p><b>Client side code</b><br/>
+		JQuery (C) 2014 jQuery Foundation and other contributors (MIT license)<br/>
+		JQuery UI (C) 2014 jQuery Foundation and other contributors (MIT license)<br/>
+		Orb::Connect Javascript library (C) 2014 kamaz (GPL)<br/>
+		HTML/JS panel code (C) 2014 kamaz (GPL)<br/>
+		Image of the Probe (C) 2006 BadWolf<br/>
+		SevenSegmentFont.ttf (C) sirak2010 (Apache License, from http://code.google.com/p/serak-tesseract-trainer/)<br/>
+		</p>
+	</div>
+	
+</div>
+
+
+
+
+</body>
+</html>

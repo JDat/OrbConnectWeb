@@ -1,0 +1,88 @@
+------------------------------------------------------------------------
+r19 | kamaz | 2014-02-03 01:07:15 +0100 (Pn, 03 lut 2014) | 1 line
+
+Add export tools. 
+------------------------------------------------------------------------
+r18 | kamaz | 2014-02-03 00:28:37 +0100 (Pn, 03 lut 2014) | 1 line
+
+Make the tabbed interface default
+------------------------------------------------------------------------
+r17 | kamaz | 2014-02-03 00:20:45 +0100 (Pn, 03 lut 2014) | 2 lines
+
+Fix SHIP:FOCUS:STATUS2 crash. 
+
+------------------------------------------------------------------------
+r16 | kamaz | 2014-02-03 00:20:09 +0100 (Pn, 03 lut 2014) | 1 line
+
+Update docs. 
+------------------------------------------------------------------------
+r15 | kamaz | 2014-02-02 14:32:52 +0100 (N, 02 lut 2014) | 1 line
+
+Add engine control. 
+------------------------------------------------------------------------
+r14 | kamaz | 2014-02-02 13:13:38 +0100 (N, 02 lut 2014) | 1 line
+
+Add about dialog
+------------------------------------------------------------------------
+r13 | kamaz | 2014-02-02 04:33:26 +0100 (N, 02 lut 2014) | 1 line
+
+Fix XR controls and hailing the Probe :)
+------------------------------------------------------------------------
+r12 | kamaz | 2014-02-02 04:21:44 +0100 (N, 02 lut 2014) | 1 line
+
+Implement truster control. 
+------------------------------------------------------------------------
+r11 | kamaz | 2014-02-02 04:21:20 +0100 (N, 02 lut 2014) | 1 line
+
+VesselCommandParser.cpp: use thruster groups instead of engine groups (bring code in line with documentation :))
+------------------------------------------------------------------------
+r10 | kamaz | 2014-02-02 01:28:54 +0100 (N, 02 lut 2014) | 3 lines
+
+orbiterclient.js: add helped function for SHIP:FOCUS:SENDBUFFEREDKEY
+example.html: add example for sendBufferedKey
+
+------------------------------------------------------------------------
+r9 | kamaz | 2014-02-02 00:34:37 +0100 (N, 02 lut 2014) | 8 lines
+
+XRVesselCtrl.h: upgrade to 3.0 (vdrorb)
+XRCtlCommandParser.cpp: bugfix: setDescentHoldAP could not set TargetDescentRate (vdrorb)
+XRCtlCommandParser.cpp: add new fields from XRVesselCtrl API 3.0 (vdrorb)
+VesselCommandParser.cpp: add SendBufferedKey (vdrorb)
+
+
+
+
+------------------------------------------------------------------------
+r8 | kamaz | 2014-02-02 00:16:30 +0100 (N, 02 lut 2014) | 1 line
+
+Add tabbed version. 
+------------------------------------------------------------------------
+r7 | kamaz | 2014-02-02 00:11:44 +0100 (N, 02 lut 2014) | 1 line
+
+Import www files. This revision corresponds to Orb::Connect 2.1 web edition as released on the forum originally. 
+------------------------------------------------------------------------
+r6 | kamaz | 2014-02-02 00:06:18 +0100 (N, 02 lut 2014) | 1 line
+
+Add HTTP support. 
+------------------------------------------------------------------------
+r5 | kamaz | 2014-02-02 00:03:42 +0100 (N, 02 lut 2014) | 2 lines
+
+Add VNCMFD-related functions (see http://orbiter-forum.com/showthread.php?p=376830&postcount=41 )
+
+------------------------------------------------------------------------
+r4 | kamaz | 2014-02-02 00:02:33 +0100 (N, 02 lut 2014) | 1 line
+
+Upgrade to Visual C++ 2010. 
+------------------------------------------------------------------------
+r3 | kamaz | 2014-02-01 23:50:46 +0100 (So, 01 lut 2014) | 1 line
+
+Finish importing 2.1 :)
+------------------------------------------------------------------------
+r2 | kamaz | 2014-02-01 23:49:10 +0100 (So, 01 lut 2014) | 1 line
+
+Import stock rev. 2.1 from OrbitHangar. 
+------------------------------------------------------------------------
+r1 | kamaz | 2014-02-01 23:45:06 +0100 (So, 01 lut 2014) | 1 line
+
+Imported folder structure
+------------------------------------------------------------------------

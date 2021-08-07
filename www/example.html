@@ -1,0 +1,72 @@
+<html>
+<head>
+<meta http-equiv="content-type" content="text/html; charset=utf-8">.
+<title>Example</title>
+<script type="text/javascript" src="jquery-1.10.2.js"></script>
+<script type="text/javascript" src="orbiterclient.js"></script>
+<script type="text/javascript">
+var oc = new OrbiterClient();
+oc.start(200);	// Update interval (ms)
+
+function init() {
+	oc.subscribe("FOCUS:Alt", function(data) {
+		var alt = Number(data);
+		var km = alt/1000;
+		$("#altitude").text(km.toFixed(3));
+	});
+	
+	oc.subscribe("FOCUS:AttitudeMode", function(data) {
+		if ( data == "1" ) 
+			$("#rcsmode").text("ROT");
+		if ( data == "2" ) 
+			$("#rcsmode").text("LIN");		
+		if ( data == "0" ) 
+			$("#rcsmode").text("OFF");		
+	});
+	
+	// Ensure that RCS is not off
+	oc.execute("FOCUS:SetAttitudeMode:1");
+}
+
+function rcs() {
+	oc.execute("FOCUS:ToggleAttitudeMode");
+}
+
+function showName() {
+	oc.execute("FOCUS:Name", function(data) {
+		alert(data);
+	});
+}
+
+function sendKeys() {
+	oc.sendBufferedKey(OAPI_KEY_T, OAPI_KEY_LCONTROL, null, null, function(data) {			
+		if ( data == "ERR08" )
+			alert("Key not processed by vessel!");
+	});
+	
+	// NOTE: Most of the time, it is enough to do:
+	// oc.sendBufferedKey(OAPI_KEY_T, OAPI_KEY_LCONTROL);
+}
+
+
+
+function bankLeft() {
+	oc.fireThrusterGroup(THGROUP_ATT_BANKLEFT, 0.3, 200);
+}
+
+function bankRight() {
+	oc.fireThrusterGroup(THGROUP_ATT_BANKRIGHT, 0.3, 200);
+}
+
+</script>
+</head>
+
+<body onLoad="init()">
+Altitude: <span id="altitude"></span> kilometers. <br />
+RCS mode: <span id="rcsmode"></span> <input type="button" value="Change" onClick="rcs()" /> <br/>
+<input type="button" value="Get ship name" onClick="showName()" /><br/>
+<input type="button" value="Send Ctrl+T" onClick="sendKeys()" /> (will toggle tertiary (left) HUD in XR2) <br/>
+<input type="button" value="Bank Left" onClick="bankLeft()" /> 
+<input type="button" value="Bank Right" onClick="bankRight()" /> 
+</body>
+</html>
