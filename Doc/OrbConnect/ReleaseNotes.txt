@@ -1,7 +1,0 @@
-Release Notes for Orb:Connect v2.1
-
-Updated for Orbiter2010, XRVesselCtrl v2.1, and VS2008Express
-
-Fix XCTL:SYSSTATUS - made it match interface, added missing value
-Fixed some logging messages
-Several new commands
